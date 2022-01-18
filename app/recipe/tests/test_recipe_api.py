@@ -1,5 +1,6 @@
 import tempfile
 import os
+
 from PIL import Image
 
 from django.contrib.auth import get_user_model
@@ -237,6 +238,53 @@ class RecipeImageUploadTests(TestCase):
         res = self.client.post(url, {'image':'noimgitem'},format='multipart')
 
         self.assertEqual(res.status_code,status.HTTP_400_BAD_REQUEST)
+    
+
+    def test_filter_recipes_by_tags(self):
+        #Test return recipe with specified tags
+        recipe1 = sample_recipe(user=self.user,title='Thai vegitable curry')
+        recipe2 = sample_recipe(user=self.user,title='Auberine with tahini')
+        tag1 = sample_tag(user=self.user,name='Vagan')
+        tag2 = sample_tag(user=self.user,name='Vegeterian')
+        recipe1.tags.add(tag1)
+        recipe2.tags.add(tag2)
+        recipe3 = sample_recipe(user=self.user,title='Fish curry')
+
+        res = self.client.get(
+            RECIPE_URL,
+            {'tags':f'{tag1.id},{tag2.id}'}
+        )
+
+        serializer1 = RecipeSerializer(recipe1)
+        serializer2 = RecipeSerializer(recipe2)
+        serializer3 = RecipeSerializer(recipe3)
+        self.assertIn(serializer1.data , res.data)
+        self.assertIn(serializer2.data , res.data)
+        self.assertNotIn(serializer3.data , res.data)
+
+    def test_filter_recipes_by_ingredients(self):
+        #Test return recipe with specified ingredient
+        recipe1 = sample_recipe(user=self.user,title='Potato curry')
+        recipe2 = sample_recipe(user=self.user,title='Mixed veg curry')
+        ingredient1 = sample_ingredient(user=self.user,name='Oil')
+        ingredient2 = sample_ingredient(user=self.user,name='salt')
+        recipe1.ingredients.add(ingredient1)
+        recipe2.ingredients.add(ingredient2)
+        recipe3 = sample_recipe(user=self.user,title='mashrooms')
+
+        res = self.client.get(
+            RECIPE_URL,
+            {'ingredients': f'{ingredient1.id},{ingredient2.id}'}
+        )
+        serializer1 = RecipeSerializer(recipe1)
+        serializer2 = RecipeSerializer(recipe2)
+        serializer3 = RecipeSerializer(recipe3)
+        self.assertIn(serializer1.data , res.data)
+        self.assertIn(serializer2.data , res.data)
+        self.assertNotIn(serializer3.data , res.data)
+    
+
+
 
 
 
